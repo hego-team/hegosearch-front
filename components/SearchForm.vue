@@ -52,7 +52,6 @@ export default {
 
 .search-input {
   margin-top: 20px;
-  margin-bottom: 500px;
 }
 
 .app-bar-search {

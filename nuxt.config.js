@@ -73,10 +73,10 @@ export default {
   },
   proxy: {
     '/server': {
-      target: 'http://localhost:8080/',
+      target: 'http://www.yili.fit:8080/',
       secure: false,
       pathRewrite: {
-        '^/server': '/',
+        '^/server/': '/',
       },
     }
   },

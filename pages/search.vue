@@ -16,7 +16,7 @@
         @keyup.enter.stop="SearchResult"
       ></v-text-field>
     </div>
-    <div class="search-res">
+    <div v-if="currentResult.length !== 0" class="search-res">
       <v-row no-gutters>
         <v-col
           v-for="(data, i) in currentResult"
@@ -64,6 +64,17 @@
       >
       </v-pagination>
     </div>
+    <div v-if="currentResult.length == 0" class="search-res">
+      <div class="search-not-found">
+        <p>没有找到您输入的关键词</p>
+        <img
+          src="../assets/img/not-found.jpeg" 
+          alt="not found"  
+          width="300px"    
+          class="search-not-found-img" 
+        >
+      </div>
+    </div>
   </div>
 </template>
 
@@ -89,7 +100,7 @@ export default {
       text: this.$route.query.q,
       stopWord: '',
     }).then((res) => {
-      this.searchDetail = res.data.result
+      this.searchDetail = res.data.Result
       const cur = this.pageSize * this.currentPage
       const prev = this.pageSize * this.currentPage - this.pageSize
       this.pageLength = Math.ceil(this.searchDetail.length / this.pageSize)
@@ -104,7 +115,7 @@ export default {
         text: this.searchText,
         stopWord: '',
       }).then((res) => {
-        this.searchDetail = res.data.result
+        this.searchDetail = res.data.Result
         const cur = this.pageSize * this.currentPage
         const prev = this.pageSize * this.currentPage - this.pageSize
         this.pageLength = Math.ceil(this.searchDetail.length / this.pageSize)
@@ -125,7 +136,7 @@ export default {
 
 <style>
 .search-res {
-  margin-top: -420px;
+  margin-top: 60px;
 }
 
 .recommand-text-div {
@@ -144,5 +155,15 @@ export default {
 .search-card-pic {
   border-radius: 7px;
   overflow: hidden;
+}
+
+.search-not-found {
+  display: block;
+  text-align:center;
+  margin: 0 auto;
+}
+.search-not-found-img {
+  display: block;
+  margin: 0 auto;
 }
 </style>
