@@ -14,51 +14,37 @@
                     ref="content"
                     v-model="searchText"
                     outlined
-                    dense
                     placeholder="全局搜索"
                     prepend-inner-icon="mdi-magnify"
                     hide-details
+                    dense
                     v-bind="attrs"
                     v-on="on"
                     @keyup.enter.stop="SearchResult"
                   ></v-text-field>
                 </div>
               </template>
-              <v-list>
-                <v-list-item>
-                  <v-list-item-icon class="me-2"> </v-list-item-icon>
+              <v-list v-if="suggestions.length">
+                <v-list-item
+                  v-for="(item, i) in suggestions"
+                  :key="i"
+                  @click="setText(item)"
+                >
+                  <v-list-item-icon class="me-2">
+                    <v-icon size="20"> mdi-magnify </v-icon>
+                  </v-list-item-icon>
                   <v-list-item-content>
-                    <v-list-item-title>123</v-list-item-title>
+                    <v-list-item-title class="">{{ item }}</v-list-item-title>
                   </v-list-item-content>
                 </v-list-item>
+              </v-list>
+              <v-list v-if="!suggestions.length">
                 <v-list-item>
-                  <v-list-item-icon class="me-2"> </v-list-item-icon>
+                  <v-list-item-icon class="me-2">
+                    <v-icon size="20"> mdi-magnify </v-icon>
+                  </v-list-item-icon>
                   <v-list-item-content>
-                    <v-list-item-title>123</v-list-item-title>
-                  </v-list-item-content>
-                </v-list-item>
-                <v-list-item>
-                  <v-list-item-icon class="me-2"> </v-list-item-icon>
-                  <v-list-item-content>
-                    <v-list-item-title>123</v-list-item-title>
-                  </v-list-item-content>
-                </v-list-item>
-                <v-list-item>
-                  <v-list-item-icon class="me-2"> </v-list-item-icon>
-                  <v-list-item-content>
-                    <v-list-item-title>123</v-list-item-title>
-                  </v-list-item-content>
-                </v-list-item>
-                <v-list-item>
-                  <v-list-item-icon class="me-2"> </v-list-item-icon>
-                  <v-list-item-content>
-                    <v-list-item-title>123</v-list-item-title>
-                  </v-list-item-content>
-                </v-list-item>
-                <v-list-item click="#">
-                  <v-list-item-icon class="me-2"> </v-list-item-icon>
-                  <v-list-item-content>
-                    <v-list-item-title>123</v-list-item-title>
+                    <v-list-item-title class="">暂无</v-list-item-title>
                   </v-list-item-content>
                 </v-list-item>
               </v-list>
@@ -93,7 +79,8 @@
                         class="filepond"
                         label-idle="拉入文件或者点击添加图片"
                         v-bind:files="myFiles"
-                        v-on:init="handleFilePondInit"
+                        :server="server"
+                        @addfile="onAddFile"
                       />
                     </client-only>
                   </v-card-text>
@@ -101,7 +88,7 @@
                 <v-card-actions>
                   <v-spacer></v-spacer>
 
-                  <v-btn color="error" text @click="dialog = false">
+                  <v-btn color="error" text @click="clickButton">
                     开始查找
                   </v-btn>
                   <v-btn color="primary" text @click="dialog = false">
@@ -126,7 +113,6 @@
                 </v-card-title>
               </v-card>
             </v-dialog> -->
-
             <v-badge
               bottom
               overlap
@@ -147,41 +133,48 @@
       </v-row>
     </div>
     <p></p>
-    <div class="d-flex flex-row" style="color: #70757a;">
-      <p class="">About 1,190,000,000 results (0.44 seconds)</p>
+    <div class="d-flex flex-row" style="color: #70757a">
+      <p class="">Get {{ count }} results ({{ time }} seconds)</p>
       <v-spacer></v-spacer>
 
       <p>设置屏蔽词:</p>
-      <div class="mt-n5 ml-2 " style="width:80px!important;">
-        <v-text-field v-text-field  color="error"  placeholder="暂无屏蔽词"></v-text-field>
-
+      <div class="mt-n5 ml-2" style="width: 100px !important">
+        <v-text-field
+          v-text-field
+          color="error"
+          placeholder="暂无屏蔽词"
+          v-model="stopword"
+        ></v-text-field>
       </div>
       <v-spacer></v-spacer>
-
     </div>
 
-    <div v-if="currentResult.length !== 0" class="search-res">
+    <div v-if="searchDetail.length !== 0" class="search-res">
       <masonry-wall
         :items="searchDetail"
         :ssr-columns="1"
-        :column-width="240"
+        :column-width="220"
         :gap="40"
       >
         <template #default="{ item }">
           <div class="grid">
             <figure class="effect-goliath">
-              <img :src="item.url" alt="img23" />
+              <img :src="item.image" alt="img23" />
+              <!-- <v-img :src="item.image" min-height="180" width="240" class="pa-0"></v-img> -->
               <figcaption>
                 <div>
-                  <p>{{ item.text }}</p>
+                  <p v-html="item.content"></p>
                 </div>
               </figcaption>
             </figure>
           </div>
         </template>
       </masonry-wall>
+      <div v-if="lastPage > currentPage" class="d-flex justify-center mt-5">
+        <v-btn elevation="0" @click="moreResult"> More </v-btn>
+      </div>
     </div>
-    <div v-if="currentResult.length == 0" class="search-res">
+    <div v-if="searchDetail.length == 0" class="search-res">
       <div class="search-not-found">
         <p>没有找到您输入的关键词</p>
         <img
@@ -192,11 +185,18 @@
         />
       </div>
     </div>
+  <div class="btn-back-top">
+    <v-btn color="blue darken-2 pr-1" dark fab  @click="toTop">
+      <v-icon>UP</v-icon>
+    </v-btn>
+  </div>
+    
   </div>
 </template>
 
 <script>
-import { search } from '@/api/search'
+import { textSearch, promptSearch } from '@/api/search'
+import { uploadFile } from '@/api/upload'
 
 export default {
   name: 'SearchPage',
@@ -208,40 +208,112 @@ export default {
       pageSize: 8,
       pageLength: 20,
       pageVisible: 10,
+      lastPage: -1,
+
       searchText: '',
       dialog: false,
       myFiles: [],
       setting: false,
+      file: null,
+      count: null,
+      time: null,
+      newDoc: [],
+      stopword: '',
+
+      suggestions: [],
     }
   },
+
+  watch: {
+    // 如果 `question` 发生改变，这个函数就会运行
+    searchText() {
+      this.suggestSearch()
+    },
+  },
   mounted() {
-    search({
-      limit: 0,
-      text: this.$route.query.q,
-      stopWord: '',
+    textSearch({
+      limit: 80,
+      query: this.$route.query.q,
+      filter: '',
+      page: 1,
     }).then((res) => {
-      this.searchDetail = res.data.Result
-      const cur = this.pageSize * this.currentPage
-      const prev = this.pageSize * this.currentPage - this.pageSize
-      this.pageLength = Math.ceil(this.searchDetail.length / this.pageSize)
-      this.currentResult = this.searchDetail.slice(prev, cur)
+      this.searchDetail = res.documents
+      this.lastPage = res.page.total
+      this.currentPage = 1
+      this.count = res.total
+      this.time = res.time / 1000
     })
+    this.searchText = this.$route.query.q
   },
 
   methods: {
+    toTop() {
+      document.documentElement.scrollTop = 0;
+    },
+    setText(sentence) {
+      this.searchText = sentence
+      this.SearchResult()
+    },
+    suggestSearch() {
+      promptSearch({
+        query: this.searchText,
+      })
+        .then((res) => {
+          this.suggestions = res
+        })
+        .catch(() => {
+          this.suggestions = []
+        })
+    },
+    clickButton() {
+      this.dialog = false
+      uploadFile(this.file).then((res) => {
+        res = res.data
+        this.searchDetail = res.documents
+        this.lastPage = res.page.total
+        this.currentPage = res.page.total
+        this.count = res.total
+        this.time = res.time / 1000
+      })
+    },
+    onAddFile(error, file) {
+      this.file = file
+      console.log('file added', { error, file })
+    },
     SearchResult() {
-      search({
-        limit: 0,
-        text: this.searchText,
-        stopWord: '',
+      textSearch({
+        limit: 80,
+        query: this.searchText,
+        filter: this.stopword,
+        page: this.currentPage,
       }).then((res) => {
-        this.searchDetail = res.data.Result
-        const cur = this.pageSize * this.currentPage
-        const prev = this.pageSize * this.currentPage - this.pageSize
-        this.pageLength = Math.ceil(this.searchDetail.length / this.pageSize)
-        this.currentResult = this.searchDetail.slice(prev, cur)
+        this.searchDetail = res.documents
+        this.lastPage = res.page.total
         this.currentPage = 1
-        this.$router.push({ name: 'images', query: { q: this.searchText } })
+        this.count = res.total
+        this.time = res.time / 1000
+        this.$router.push({
+          name: 'images',
+          query: { q: this.searchText },
+          replace: true,
+        })
+      })
+    },
+    moreResult() {
+      this.currentPage++
+      textSearch({
+        limit: 80,
+        query: this.searchText,
+        filter: this.stopword,
+        page: this.currentPage,
+      }).then((res) => {
+        if (this.currentPage < this.lastPage) {
+          const docs = res.documents
+          for (let index = 0; index < docs.length; index++) {
+            const element = docs[index]
+            this.searchDetail.push(element)
+          }
+        }
       })
     },
     onPageChange(page) {
@@ -249,12 +321,6 @@ export default {
       const cur = this.pageSize * this.currentPage
       const prev = this.pageSize * this.currentPage - this.pageSize
       this.currentResult = this.searchDetail.slice(prev, cur)
-    },
-    handleFilePondInit() {
-      console.log('FilePond has initialized')
-    },
-    set() {
-      this.setting = true
     },
   },
 }
@@ -315,6 +381,11 @@ figure.effect-goliath:hover p {
   transform: translate3d(0, 0, 0);
 }
 
+figure.effect-goliath {
+  min-height: 100px;
+  width: 240px;
+}
+
 .grid figure h2 {
   word-spacing: -0.15em;
   font-weight: 300;
@@ -355,7 +426,9 @@ figure.effect-goliath:hover p {
   text-transform: uppercase;
   font-size: 1.25em;
 }
-
+.grid {
+  min-height: 100px;
+}
 .grid figure figcaption::before,
 .grid figure figcaption::after {
   pointer-events: none;
@@ -378,5 +451,15 @@ figure.effect-goliath:hover p {
   height: 100%;
   width: 400px;
   background-color: #f6fbf4 !important;
+}
+.search-not-found {
+  display: block;
+  text-align: center;
+  margin: 0 auto;
+}
+.btn-back-top {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
 }
 </style>

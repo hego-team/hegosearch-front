@@ -6,8 +6,8 @@ export default {
 
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
-    titleTemplate: '%s - frontend',
-    title: 'frontend',
+    titleTemplate: '%s  图片搜索引擎',
+    title: 'Hego ~ ',
     htmlAttrs: {
       lang: 'en'
     },
@@ -82,6 +82,10 @@ export default {
       pathRewrite: {
         '^/server/': '/',
       },
+    },
+    '/hego': {
+      target: 'http://localhost:8443/',
+      secure: false,
     }
   },
   // Build Configuration: https://go.nuxtjs.dev/config-build

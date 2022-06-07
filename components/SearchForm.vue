@@ -30,7 +30,7 @@ export default {
   },
   methods: {
     JmpSearch() {
-      this.$router.push({ name: 'search', query: { q: this.searchText } })
+      this.$router.push({ name: 'images', query: { q: this.searchText } ,replace: true})
     },
   },
 }

@@ -19,7 +19,7 @@ axios.interceptors.response.use(
 
 export function get(url, params = {}) {
   return new Promise((resolve, reject) => {
-    axios.get(`/server/${url}`, {
+    axios.get(`${url}`, {
       params,
     }).then(response => {
       resolve(response.data)
@@ -30,7 +30,7 @@ export function get(url, params = {}) {
 }
 export function post(url, data = {}) {
   return new Promise((resolve, reject) => {
-    axios.post(`/server/${url}`, data)
+    axios.post(`${url}`, data)
       .then(response => {
         resolve(response.data)
       }, err => {
